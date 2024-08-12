@@ -11,8 +11,8 @@ class Organization(Base):
     name = Column(String(100))
     account = Column(String(100))
     website = Column(String(100))
-    fuel_reimbursement_policy = Column(String(100), default="Policy 1000")
-    speed_limit_policy = Column(String(100))
+    fuel_reimbursement_policy = Column(String(100), nullable=True)
+    speed_limit_policy = Column(String(100), nullable=True)
     parent_org_id = Column(Integer, ForeignKey('organizations.org_id'), nullable=True)
 
     vehicles = relationship("Vehicle", back_populates="organization")

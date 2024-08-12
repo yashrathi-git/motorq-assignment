@@ -1,7 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
+from motorq.crud.crud_organization import CRUDOrganization
 from motorq.deps import get_db
 from motorq.models.organizations import Organization
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from motorq.schemas.organizations import OrganizationCreate, OrganizationResponse, OrganizationUpdate
 
 router = APIRouter(prefix="/Orgs", tags=["organizations"])
@@ -20,6 +23,16 @@ async def create_organization(org: OrganizationCreate, db: AsyncSession = Depend
     await db.refresh(db_org)
     return db_org
 
+async def propagate_fuel_policy(db: AsyncSession, parent_org: Organization, new_policy: str):
+    stmt = select(Organization).where(Organization.parent_org_id == parent_org.org_id)
+    result = await db.execute(stmt)
+    child_orgs = result.scalars().all()
+
+    for child_org in child_orgs:
+        child_org.fuel_reimbursement_policy = new_policy
+        await propagate_fuel_policy(db, child_org, new_policy)
+
+
 @router.patch("/{org_id}", response_model=OrganizationResponse)
 async def update_organization(
     org_update: OrganizationUpdate,
@@ -33,8 +46,18 @@ async def update_organization(
     update_data = org_update.dict(exclude_unset=True)
     for key, value in update_data.items():
         setattr(org, key, value)
+    
+    if 'fuel_reimbursement_policy' in update_data:
+        await propagate_fuel_policy(db, org, update_data['fuel_reimbursement_policy'])
 
     await db.commit()
     await db.refresh(org)
 
     return org
+
+@router.get("/{org_id}", response_model=OrganizationResponse)
+async def get_organization(org_id: int = Path(..., gt=0), db: AsyncSession = Depends(get_db)):
+    org_details = await CRUDOrganization.get_organization_details(db, org_id)
+    if not org_details:
+        raise HTTPException(status_code=404, detail="Organization not found")
+    return org_details

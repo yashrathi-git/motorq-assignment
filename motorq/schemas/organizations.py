@@ -5,8 +5,8 @@ class OrganizationCreate(BaseModel):
     name: str
     account: str
     website: str
-    fuel_reimbursement_policy: str = Field(default="Policy 1000")
-    speed_limit_policy: str
+    fuel_reimbursement_policy: Optional[str] = None
+    speed_limit_policy: Optional[str] = None
     parent_org_id: Optional[int] = None
 
 class OrganizationResponse(BaseModel):
@@ -14,9 +14,9 @@ class OrganizationResponse(BaseModel):
     name: str
     account: str
     website: str
-    fuel_reimbursement_policy: str
-    speed_limit_policy: str
-    parent_org_id: Optional[int]
+    fuel_reimbursement_policy: Optional[str] = None
+    speed_limit_policy: Optional[str] = None
+    parent_org_id: Optional[int] = None
 
     class Config:
         orm_mode = True
