@@ -1,3 +1,4 @@
+from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from motorq.models.organizations import Organization
@@ -69,4 +70,9 @@ class CRUDOrganization:
             else:
                 break
         return None
+
+    @staticmethod
+    async def get_multiple(db: AsyncSession, skip: int = 0, limit: int = 100) -> List[Organization]:
+        result = await db.execute(select(Organization).offset(skip).limit(limit))
+        return result.scalars().all()
     

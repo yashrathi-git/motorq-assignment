@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, Path
+from typing import List
+from fastapi import APIRouter, HTTPException, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from motorq.crud.crud_organization import CRUDOrganization
 from motorq.deps import get_db
@@ -72,3 +73,12 @@ async def get_organization(org_id: int = Path(..., gt=0), db: AsyncSession = Dep
     if not org_details:
         raise HTTPException(status_code=404, detail="Organization not found")
     return org_details
+
+@router.get("", response_model=List[OrganizationResponse])
+async def get_organizations(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(4, ge=1, le=100),
+    db: AsyncSession = Depends(get_db)
+):
+    organizations = await CRUDOrganization.get_multiple(db, skip=skip, limit=limit)
+    return organizations
