@@ -20,3 +20,9 @@ class OrganizationResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class OrganizationUpdate(BaseModel):
+    account: Optional[str] = None
+    website: Optional[str] = None
+    fuel_reimbursement_policy: Optional[str] = None
+    speed_limit_policy: Optional[str] = None

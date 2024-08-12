@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from motorq.deps import get_db
 from motorq.models.organizations import Organization
-from motorq.schemas.organizations import OrganizationCreate, OrganizationResponse
+from motorq.schemas.organizations import OrganizationCreate, OrganizationResponse, OrganizationUpdate
 
 router = APIRouter(prefix="/Orgs", tags=["organizations"])
 
@@ -19,3 +19,22 @@ async def create_organization(org: OrganizationCreate, db: AsyncSession = Depend
     await db.commit()
     await db.refresh(db_org)
     return db_org
+
+@router.patch("/{org_id}", response_model=OrganizationResponse)
+async def update_organization(
+    org_update: OrganizationUpdate,
+    org_id: int = Path(..., gt=0),
+    db: AsyncSession = Depends(get_db)
+):
+    org = await db.get(Organization, org_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    update_data = org_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(org, key, value)
+
+    await db.commit()
+    await db.refresh(org)
+
+    return org

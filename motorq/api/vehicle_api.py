@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from motorq.helper.decode_vin import decode_vin
 from motorq.models.vehicles import Vehicle
@@ -46,3 +46,17 @@ async def decode_vin_route(vin: str):
         return vehicle_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to decode VIN: {str(e)}")
+
+@router.get("/{vin}")
+async def get_vehicle(
+    vin: str = Path(..., min_length=17, max_length=17, regex="^[A-HJ-NPR-Z0-9]{17}$"),
+    db: AsyncSession = Depends(get_db)
+):
+    if not re.match("^[A-HJ-NPR-Z0-9]{17}$", vin):
+        raise HTTPException(status_code=400, detail="Invalid VIN format")
+
+    vehicle = await db.get(Vehicle, vin)
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+
+    return vehicle
