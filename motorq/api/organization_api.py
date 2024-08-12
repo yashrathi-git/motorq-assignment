@@ -44,6 +44,17 @@ async def update_organization(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     update_data = org_update.dict(exclude_unset=True)
+    # IF The parent have already set some value
+    # The Child can't update the value
+    if 'fuel_reimbursement_policy' in update_data:
+        if org.parent_org_id:
+            parent_org = await db.get(Organization, org.parent_org_id)
+            if parent_org and parent_org.fuel_reimbursement_policy:
+                raise HTTPException(
+                    status_code=400,
+                    detail="The fuel reimbursement policy can't be updated because the parent organization already has a policy set"
+                )
+            
     for key, value in update_data.items():
         setattr(org, key, value)
     
