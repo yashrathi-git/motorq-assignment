@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Path
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from motorq.helper.decode_vin import decode_vin
 from motorq.models.vehicles import Vehicle
@@ -18,7 +19,10 @@ async def create_vehicle(vehicle: VehicleCreate, db: AsyncSession = Depends(get_
     org = await db.get(Organization, vehicle.org)
     if not org:
         raise HTTPException(status_code=404, detail="Organization not found")
-
+    
+    existing_vehicle = await db.execute(select(Vehicle).where(Vehicle.vin == vehicle.vin))
+    if existing_vehicle.scalar_one_or_none():
+        raise HTTPException(status_code=409, detail="Vehicle with this VIN already exists")
     try:
         decoded_info = await decode_vin(vehicle.vin)
     except Exception as e:
